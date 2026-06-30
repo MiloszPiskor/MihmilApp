@@ -1,9 +1,10 @@
 from sqlalchemy import (
-    Table, Column, String, ForeignKey,
+    Table, Column, String, ForeignKey, Boolean, Text,
     Integer, Date, Index, UniqueConstraint, TypeDecorator, event
 )
 from sqlalchemy.orm import registry, relationship, composite
 from domain import model
+
 mapper_registry = registry()
 metadata = mapper_registry.metadata
 
@@ -33,6 +34,20 @@ sales_reps = Table(
     Column('email', String(255)),
 
     UniqueConstraint("reference", name="uq_salesrep_reference")
+)
+
+users = Table(
+    "users",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("sub", String(255), unique=True, index=True, nullable=False),
+    Column("email", String(255), nullable=False, index=True),
+    Column("name", String(255), nullable=False),
+    Column("role", String(20), nullable=False, default="rep"),
+    Column("rep_reference", String(20), ForeignKey("sales_reps.reference"), nullable=True),
+    Column("is_active", Boolean, nullable=False, default=True),
+    Column("okta_groups", Text, nullable=True),
+    UniqueConstraint("sub", name="uq_users_sub"),
 )
 
 # Company - Aggregate root table
@@ -94,6 +109,20 @@ company_assignments = Table(
 def start_mappers():
     # 1. Map SalesRep
     rep_mapper = mapper_registry.map_imperatively(model.SalesRep, sales_reps)
+
+    mapper_registry.map_imperatively(
+        model.User,
+        users,
+        properties={
+            "rep": relationship(
+                rep_mapper,
+                primaryjoin=users.c.rep_reference == sales_reps.c.reference,
+                foreign_keys=[users.c.rep_reference],
+                uselist=False,
+                lazy="select",
+            )
+        },
+    )
 
     # 2. Map Company WITH relationship (minimal)
     mapper_registry.map_imperatively(

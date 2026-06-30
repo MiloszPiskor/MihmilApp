@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def get_postgres_uri():
     host = os.environ.get('DB_HOST', 'localhost')
@@ -18,3 +21,12 @@ port = 587
 username = "miloszpiskor97@gmail.com"
 password = "vsew diek xqsm habi"
 recipient = "biuro@prexpol.eu"
+
+import os
+
+class Config:
+    OKTA_DOMAIN = os.getenv("OKTA_DOMAIN")
+    OKTA_ISSUER = os.getenv("OKTA_ISSUER")
+    OKTA_AUDIENCE = os.getenv("OKTA_AUDIENCE")
+    OKTA_CLIENT_ID = os.getenv("OKTA_CLIENT_ID")
+    OKTA_REDIRECT_URI = os.getenv("OKTA_REDIRECT_URI")

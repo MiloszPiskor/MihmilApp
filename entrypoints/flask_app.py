@@ -1,13 +1,19 @@
 from datetime import date
-from flask import request, jsonify, Flask
+from flask import request, jsonify, Flask, g
 from adapters.orm import start_mappers
 from service_layer import unit_of_work, views, messagebus
 from logging_config import get_logger
 from domain import commands, model
+from infrastructure.auth import OktaAuth
+from infrastructure.admin_panel import setup_admin
+from service_layer.unit_of_work import SqlAlchemyUnitOfWork
+from infrastructure.authorization_decorators import requires_auth, requires_role, requires_rep_ownership
+from config import Config
 from flask_cors import CORS
 
 # Initialize Flask
 app = Flask(__name__)
+app.config.from_object(Config)
 CORS(
     app,
     resources={r"/api/*": {"origins": "*"}},
@@ -16,6 +22,52 @@ CORS(
 logger = get_logger(__name__)
 
 start_mappers()
+
+app.okta_auth = OktaAuth(
+    issuer=app.config["OKTA_ISSUER"],
+    audience=app.config["OKTA_AUDIENCE"],
+)
+
+@app.before_request
+def attach_uow():
+    g.uow = SqlAlchemyUnitOfWork()
+
+@app.teardown_request
+def teardown_uow(exc):
+    uow = g.pop("uow", None)
+    if uow is None:
+        return
+    try:
+        if exc:
+            uow.rollback()
+        else:
+            uow.commit()
+    finally:
+        uow.session.close()
+
+setup_admin(app, SqlAlchemyUnitOfWork().session_factory)
+
+@app.before_request
+def attach_uow():
+    g.uow = SqlAlchemyUnitOfWork()
+
+@app.teardown_request
+def teardown_uow(exc):
+    uow = g.pop("uow", None)
+    if uow is None:
+        return
+    if exc:
+        uow.rollback()
+    else:
+        try:
+            uow.commit()
+        except Exception:
+            uow.rollback()
+            raise
+    uow.session.close()
+
+if __name__ == "__main__":
+    app.run(debug=True)
 
 def _parse_iso_date(value: str) -> date:
     return date.fromisoformat(value)
@@ -38,6 +90,30 @@ def serialize_date(value):
 #         return jsonify({"error": str(e)}), 400
 #
 #     return jsonify(repref = repref), 201 # [] -> ?
+
+@app.get("/me")
+@requires_auth
+def me():
+    user = g.current_user
+    return jsonify({
+        "sub": user.sub,
+        "email": user.email,
+        "name": user.name,
+        "role": user.role,
+        "rep_reference": user.rep_reference,
+    })
+
+@app.get("/admin/users")
+@requires_auth
+@requires_role("admin")
+def list_users():
+    return jsonify({"ok": True})
+
+@app.get("/reps/<rep_reference>/dashboard")
+@requires_auth
+@requires_rep_ownership
+def rep_dashboard(rep_reference):
+    return jsonify({"rep_reference": rep_reference})
 
 @app.route("/api/reps/<rep_reference>/dashboard", methods=["GET"])
 def rep_dashboard(rep_reference):

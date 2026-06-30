@@ -3,7 +3,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from . import events, commands
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
@@ -21,6 +21,40 @@ class WrongZK(Exception):
 
 class NoZK(Exception):
     pass
+
+@dataclass(frozen=True)
+class UserId:
+    value: str
+
+@dataclass(frozen=True)
+class UserRole:
+    value: str
+
+    REP = "rep"
+    OFFICE = "office"
+    ADMIN = "admin"
+
+@dataclass
+class User:
+    sub: str
+    email: str
+    name: str
+    role: str
+    rep_reference: Optional[str] = None
+    is_active: bool = True
+    okta_groups: Optional[str] = None
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == "admin"
+
+    @property
+    def is_office(self) -> bool:
+        return self.role == "office"
+
+    @property
+    def is_rep(self) -> bool:
+        return self.role == "rep"
 
 # Value Objects (pure, immutable)
 @dataclass(frozen=True)

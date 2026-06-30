@@ -12,8 +12,10 @@ pytest-icdiff
 mypy
 requests
 apscheduler
-
-
+Flask-Admin
+python-jose[cryptography]
+python-dotenv
+flask-cors
 
 ## Szybka instalacja
 #```bash
