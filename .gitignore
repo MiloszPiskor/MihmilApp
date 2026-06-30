@@ -1,0 +1,19 @@
+# Python
+
+*.pyc
+
+__pycache__/
+
+# Node
+
+frontend/node_modules/
+
+# Environment
+
+frontend/.env.development
+
+# Vite
+
+frontend/dist/
+
+*.log

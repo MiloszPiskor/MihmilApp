@@ -4,13 +4,18 @@ from adapters.orm import start_mappers
 from service_layer import unit_of_work, views, messagebus
 from logging_config import get_logger
 from domain import commands, model
+from flask_cors import CORS
 
 # Initialize Flask
 app = Flask(__name__)
+CORS(
+    app,
+    resources={r"/api/*": {"origins": "*"}},
+)
 # Initialize logger
 logger = get_logger(__name__)
 
-# start_mappers()
+start_mappers()
 
 def _parse_iso_date(value: str) -> date:
     return date.fromisoformat(value)
