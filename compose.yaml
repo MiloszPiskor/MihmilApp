@@ -1,0 +1,91 @@
+#version: "3.9"
+#services:
+#
+#  app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: ddd_flask_app
+#    depends_on:
+#      - postgres
+#    environment:
+#      - DB_HOST=postgres
+#      - DB_USER=prexpol
+#      - DB_PASSWORD=abc123
+#      - DB_NAME=prexpol
+#    volumes:
+#      - .:/app
+#    ports:
+#      - "5005:5000"   # host:container
+#    restart: always
+#
+#
+#  postgres:
+#    image: postgres:16
+#    container_name: ddd_postgres
+#    environment:
+#      - POSTGRES_USER=prexpol
+#      - POSTGRES_PASSWORD=abc123
+#      - POSTGRES_DB=prexpol
+#    ports:
+#      - "54321:5432"
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#
+#volumes:
+#  postgres_data:
+
+# Version with scheduler running separately inside another container:
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ddd_flask_app
+    depends_on:
+      - postgres
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=prexpol
+      - DB_PASSWORD=abc123
+      - DB_NAME=prexpol
+    volumes:
+      - .:/app
+    ports:
+      - "5005:5000"
+    restart: always
+    command: flask run --host=0.0.0.0 --port=5000
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ddd_scheduler
+    depends_on:
+      - postgres
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=prexpol
+      - DB_PASSWORD=abc123
+      - DB_NAME=prexpol
+    volumes:
+      - .:/app
+    restart: always
+    command: python -m entrypoints.schedule_runner
+
+  postgres:
+    image: postgres:16
+    container_name: ddd_postgres
+    environment:
+      - POSTGRES_USER=prexpol
+      - POSTGRES_PASSWORD=abc123
+      - POSTGRES_DB=prexpol
+    ports:
+      - "54321:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

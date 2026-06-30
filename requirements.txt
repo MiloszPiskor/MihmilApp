@@ -1,0 +1,23 @@
+# app
+Flask==3.0.0
+sqlalchemy==2.0.*
+psycopg2-binary
+python-dateutil
+tenacity
+pyodbc
+# tests
+pytest
+pytest-icdiff
+mypy
+requests
+apscheduler
+
+
+
+## Szybka instalacja
+#```bash
+# W swoim venv
+#pip install -r requirements.txt
+
+# Lub development set
+#pip install -r requirements.txt -r requirements-dev.txt
